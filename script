@@ -1,0 +1,69 @@
+#!/usr/bin/python
+
+import sys
+import os
+import subprocess
+from scriptconf import *
+
+
+PASS=True
+FAIL=False
+
+DEBUG=False
+if sys.argv[-1] == "DEBUG":
+    DEBUG=True
+
+def checklimit(cmd, limit):
+    task = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    nproc = float(task.stdout.read()[:-1])
+    if DEBUG:
+        print nproc,limit
+        print nproc < limit
+    if nproc < limit:
+        return PASS
+    else:
+        return FAIL
+
+def checknproc(user):
+    cmd = "ps -eo user|grep "+user+"|wc -l"
+    limit = getlimit(user, nproc)
+    return checklimit(cmd, limit)
+
+def checkperip(hostname):
+    cmd = "netstat -tT|grep '"+hostname.replace('.',"\.")+"'|grep ssh|grep ESTAB|wc -l"
+    limit = getlimit(hostname, perip) + 0.5 # dont forget yourself counted as 1
+    if DEBUG:
+        limit = limit - 1
+    return checklimit(cmd, limit)
+
+def getlimit(item, list):
+    if item in list:
+        ret = list[item]
+    else:
+        ret = list["default"]
+    return float(ret)
+
+def main():
+    if len(sys.argv) <= 1:
+        return PASS
+    else:
+        user = sys.argv[1]
+        if user in admin:
+            return PASS
+        nproc_pass = checknproc(user)
+        ret = nproc_pass
+
+    if len(sys.argv) >= 3:
+        hostname = sys.argv[2]
+        perip_pass = checkperip(hostname)
+        ret = ret and perip_pass
+    return ret
+
+
+f = open("/tmp/script","w+")
+f.write(str(sys.argv))
+
+if main() == PASS:
+    print 1
+else:
+    print 0
