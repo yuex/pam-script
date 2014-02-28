@@ -30,7 +30,7 @@ def checknproc(user):
     return checklimit(cmd, limit)
 
 def checkperip(hostname):
-    cmd = "netstat -tT|grep '"+hostname.replace('.',"\.")+"'|grep ssh|grep ESTAB|wc -l"
+    cmd = "netstat -ptT|grep '"+hostname.replace('.',"\.")+"'|grep ssh|grep ESTAB|wc -l"
     limit = getlimit(hostname, perip) + 0.5 # dont forget yourself counted as 1
     if DEBUG:
         limit = limit - 1
